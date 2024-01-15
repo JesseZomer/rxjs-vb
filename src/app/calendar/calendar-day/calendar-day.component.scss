@@ -1,0 +1,53 @@
+:host {
+    border: 1px solid #e2e6e9;
+    min-height: 150px;
+    padding: 8px;
+
+    &:hover {
+        background-color: rgb(225, 247, 245);
+    }
+}
+
+header {
+    display: flex;
+    justify-content: end;
+}
+
+h2 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    height: 34px;
+    width: 34px;
+
+    &.is-peildatum {
+        border-radius: 50%;
+
+        background-color: cornflowerblue;
+    }
+
+    &.is-today {
+        border-radius: 50%;
+        color: white;
+
+        background-color: chocolate;
+    }
+}
+
+.afspraken {
+    display: grid;
+    row-gap: 8px;
+}
+
+.afspraak {
+    display: flex;
+    column-gap: 8px;
+    border-bottom: 1px solid #e2e6e9;
+    padding-bottom: 4px;
+    cursor: pointer;
+
+    &.is-selected {
+        background-color: rgb(197, 245, 241);
+    }
+}

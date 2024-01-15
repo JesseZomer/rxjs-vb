@@ -1,0 +1,43 @@
+<h1>Calendar</h1>
+<header>
+    <span class="maand-jaar">{{ this.date | date: 'MMMM yyyy' }}</span>
+    <div class="filter">
+        <span>Filter: </span>
+        <input [(ngModel)]="filter" (ngModelChange)="filterAfspraken(filter)" type="text" />
+        <span class="clear" (click)="clearFilter()">X</span>
+    </div>
+    <div class="buttons">
+        <span class="vorige" (click)="vorige()"> < </span>
+        <span class="view button" [class.active]="view === 'dag'" (click)="updateView('dag')">Dag</span>
+        <span class="view button" [class.active]="view === 'week'" (click)="updateView('week')">Week</span>
+        <span class="view button" [class.active]="view === 'maand'" (click)="updateView('maand')">Maand</span>
+        <span class="volgende" (click)="volgende()"> > </span>
+        <span class="loading" [class.hidden]="!loading">
+            <app-loader />
+        </span>
+    </div>
+</header>
+<div class="dagnamen" [class.is-dag]="view === 'dag'">
+    @if (view === 'dag') {
+        <span class="dag">{{ this.date | date: 'EEEE' }}</span>
+    } @else {
+        <span class="dag">Ma</span>
+        <span class="dag">Di</span>
+        <span class="dag">Wo</span>
+        <span class="dag">Do</span>
+        <span class="dag">Vr</span>
+        <span class="dag">Za</span>
+        <span class="dag">Zo</span>
+    }
+</div>
+<div class="dagen" [class.is-dag]="view === 'dag'">
+    @for (dag of dagen; track $index) {
+        <app-calendar-day
+            [dag]="dag"
+            [afspraken]="afsprakenPerDag.get(dag.toString()) ?? []"
+            [peildatum]="date"
+            [selectedAfspraakId]="selectedAfspraak?.id"
+            (selectAfspraak)="selectAfspraak($event)" />
+    }
+</div>
+<div class="details">Geselecteerd afspraak details: {{ selectedAfspraakDetails }}</div>

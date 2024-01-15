@@ -1,0 +1,116 @@
+:host {
+    display: grid;
+    grid-template-rows: max-content 1fr;
+    padding: 0 16px;
+}
+
+header {
+    display: grid;
+    grid-auto-flow: column;
+    grid-template-columns: max-content 1fr;
+    background-color: cadetblue;
+    padding: 16px;
+    border-top-right-radius: 5px;
+    border-top-left-radius: 5px;
+
+    .maand-jaar {
+        font-size: 24px;
+        color: white;
+        font-weight: bold;
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .vorige,
+    .volgende {
+        font-size: 24px;
+        color: white;
+        cursor: pointer;
+
+        &:hover {
+            color: #577a9e;
+        }
+    }
+}
+
+.loading {
+    display: flex;
+    align-items: center;
+    font-size: 20px;
+    color: white;
+    fill: white;
+
+    &.hidden {
+        visibility: hidden;
+    }
+}
+
+.filter {
+    display: flex;
+    column-gap: 4px;
+    color: white;
+    align-items: center;
+    grid-column: 1;
+
+    .clear {
+        cursor: pointer;
+        font-size: 20px;
+
+        &:hover {
+            color: #577a9e;
+        }
+    }
+}
+
+.buttons {
+    display: grid;
+    grid-auto-flow: column;
+    justify-content: center;
+    column-gap: 16px;
+    grid-auto-columns: max-content;
+    grid-column: 1/-1;
+    grid-row: 1;
+    align-items: center;
+
+    .button {
+        border-radius: 5px;
+        color: white;
+        cursor: pointer;
+        font-size: 20px;
+
+        &:hover {
+            color: #577a9e;
+        }
+        &.active {
+            color: #2c3e50;
+        }
+    }
+}
+
+.dagnamen {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(max-content, 1fr));
+    justify-items: end;
+    background-color: cadetblue;
+    color: white;
+    font-size: 20px;
+
+    .dag {
+        padding: 8px;
+        padding-right: 18px;
+    }
+
+    &.is-dag {
+        grid-template-columns: 1fr;
+        justify-items: start;
+    }
+}
+
+.dagen {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(max-content, 1fr));
+
+    &.is-dag {
+        grid-template-columns: 1fr;
+    }
+}
