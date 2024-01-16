@@ -1,45 +1,43 @@
 <h1>Calendar</h1>
-<ng-container *ngIf="viewmodel$ | async as vm">
-    <header>
-        <span class="maand-jaar">{{ vm.date | date: 'MMMM yyyy' }}</span>
-        <div class="filter">
-            <span>Filter: </span>
-            <input [formControl]="filterFormControl" type="text" />
-            <span class="clear" (click)="filterFormControl.setValue('')">X</span>
-        </div>
-        <div class="buttons">
-            <span class="vorige" (click)="vorige()"> < </span>
-            <span class="view button" [class.active]="vm.view === 'dag'" (click)="view$.next('dag')">Dag</span>
-            <span class="view button" [class.active]="vm.view === 'week'" (click)="view$.next('week')">Week</span>
-            <span class="view button" [class.active]="vm.view === 'maand'" (click)="view$.next('maand')">Maand</span>
-            <span class="volgende" (click)="volgende()"> > </span>
-            <span class="loading" [class.hidden]="!loading">
-                <app-loader />
-            </span>
-        </div>
-    </header>
-    <div class="dagnamen" [class.is-dag]="vm.view === 'dag'">
-        @if (vm.view === 'dag') {
-            <span class="dag">{{ vm.date | date: 'EEEE' }}</span>
-        } @else {
-            <span class="dag">Ma</span>
-            <span class="dag">Di</span>
-            <span class="dag">Wo</span>
-            <span class="dag">Do</span>
-            <span class="dag">Vr</span>
-            <span class="dag">Za</span>
-            <span class="dag">Zo</span>
-        }
+<header>
+    <span class="maand-jaar">{{ date() | date: 'MMMM yyyy' }}</span>
+    <div class="filter">
+        <span>Filter: </span>
+        <input [formControl]="filterFormControl" type="text" />
+        <span class="clear" (click)="filterFormControl.setValue('')">X</span>
     </div>
-    <div class="dagen" [class.is-dag]="vm.view === 'dag'">
-        @for (dag of vm.dagen; track $index) {
-            <app-calendar-day
-                [dag]="dag"
-                [afspraken]="vm.afsprakenPerDag.get(dag.toString()) ?? []"
-                [peildatum]="vm.date"
-                [selectedAfspraakId]="vm.selectedAfspraak?.id"
-                (selectAfspraak)="this.selectedAfspraak$.next($event)" />
-        }
+    <div class="buttons">
+        <span class="vorige" (click)="vorige()"> < </span>
+        <span class="view button" [class.active]="view() === 'dag'" (click)="view.set('dag')">Dag</span>
+        <span class="view button" [class.active]="view() === 'week'" (click)="view.set('week')">Week</span>
+        <span class="view button" [class.active]="view() === 'maand'" (click)="view.set('maand')">Maand</span>
+        <span class="volgende" (click)="volgende()"> > </span>
+        <span class="loading" [class.hidden]="!loading()">
+            <app-loader />
+        </span>
     </div>
-    <div class="details">Geselecteerd afspraak details: {{ vm.afspraakDetails }}</div>
-</ng-container>
+</header>
+<div class="dagnamen" [class.is-dag]="view() === 'dag'">
+    @if (view() === 'dag') {
+        <span class="dag">{{ date() | date: 'EEEE' }}</span>
+    } @else {
+        <span class="dag">Ma</span>
+        <span class="dag">Di</span>
+        <span class="dag">Wo</span>
+        <span class="dag">Do</span>
+        <span class="dag">Vr</span>
+        <span class="dag">Za</span>
+        <span class="dag">Zo</span>
+    }
+</div>
+<div class="dagen" [class.is-dag]="view() === 'dag'">
+    @for (dag of dagen(); track $index) {
+        <app-calendar-day
+            [dag]="dag"
+            [afspraken]="afsprakenPerDag().get(dag.toString()) ?? []"
+            [peildatum]="date()"
+            [selectedAfspraakId]="selectedAfspraak()?.id"
+            (selectAfspraak)="selectedAfspraak.set($event)" />
+    }
+</div>
+<div class="details">Geselecteerd afspraak details: {{ afspraakDetails() }}</div>
