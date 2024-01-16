@@ -1,30 +1,13 @@
 import { DatePipe, NgIf } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import {
-    addDays,
-    addMonths,
-    addWeeks,
-    eachDayOfInterval,
-    endOfMonth,
-    endOfWeek,
-    isFuture,
-    isSameDay,
-    isSameMonth,
-    startOfMonth,
-    startOfWeek
-} from 'date-fns';
+import { eachDayOfInterval, endOfMonth, isFuture, isSameDay, isSameMonth, startOfMonth } from 'date-fns';
 import { sortBy } from 'lodash';
 import { Subscription } from 'rxjs';
 import { Afspraak, AfsprakenService } from '../afspraken.service';
 import { LoaderComponent } from '../loader/loader.component';
+import { CalendarView, dagenVanDeMaand, dagenVanDeWeek, navigationFns } from '../utils';
 import { CalendarDayComponent } from './calendar-day/calendar-day.component';
-
-type CalendarView = 'maand' | 'week' | 'dag';
-export interface Dag {
-    datum: Date;
-    afspraken: Afspraak[];
-}
 
 @Component({
     selector: 'app-calendar',
@@ -58,17 +41,11 @@ export class CalendarComponent implements OnInit {
         this.view = view;
         switch (view) {
             case 'maand': {
-                this.dagen = eachDayOfInterval({
-                    start: startOfWeek(startOfMonth(this.date), { weekStartsOn: 1 }),
-                    end: endOfWeek(endOfMonth(this.date), { weekStartsOn: 1 })
-                });
+                this.dagen = dagenVanDeMaand(this.date);
                 return;
             }
             case 'week': {
-                this.dagen = eachDayOfInterval({
-                    start: startOfWeek(this.date, { weekStartsOn: 1 }),
-                    end: endOfWeek(this.date, { weekStartsOn: 1 })
-                });
+                this.dagen = dagenVanDeWeek(this.date);
                 return;
             }
             case 'dag': {
@@ -127,9 +104,3 @@ export class CalendarComponent implements OnInit {
             ['desc']
         )[0];
 }
-
-const navigationFns = {
-    dag: addDays,
-    week: addWeeks,
-    maand: addMonths
-} satisfies Record<CalendarView, (date: Date, number: number) => Date>;
