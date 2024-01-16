@@ -1,135 +1,94 @@
-import { DatePipe, NgIf } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import {
-    addDays,
-    addMonths,
-    addWeeks,
-    eachDayOfInterval,
-    endOfMonth,
-    endOfWeek,
-    isFuture,
-    isSameDay,
-    isSameMonth,
-    startOfMonth,
-    startOfWeek
-} from 'date-fns';
-import { sortBy } from 'lodash';
-import { Subscription } from 'rxjs';
+import { AsyncPipe, DatePipe, NgIf } from '@angular/common';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { isSameDay, isSameMonth } from 'date-fns';
+import { BehaviorSubject, combineLatest, filter, map, shareReplay, startWith, switchMap, tap } from 'rxjs';
+import { match } from 'ts-pattern';
 import { Afspraak, AfsprakenService } from '../afspraken.service';
 import { LoaderComponent } from '../loader/loader.component';
+import { CalendarView, afsprakenVanDeMaand, afsprakenVanDeWeek, eerstVolgendeAfspraak, isPresent, navigationFns } from './../utils';
 import { CalendarDayComponent } from './calendar-day/calendar-day.component';
-
-type CalendarView = 'maand' | 'week' | 'dag';
-export interface Dag {
-    datum: Date;
-    afspraken: Afspraak[];
-}
 
 @Component({
     selector: 'app-calendar',
     standalone: true,
-    imports: [CalendarDayComponent, ReactiveFormsModule, FormsModule, NgIf, LoaderComponent, DatePipe],
+    imports: [CalendarDayComponent, ReactiveFormsModule, FormsModule, NgIf, LoaderComponent, DatePipe, AsyncPipe],
     templateUrl: './calendar.component.html',
     styleUrl: './calendar.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class CalendarComponent implements OnInit {
-    view: CalendarView = 'maand';
-    date = new Date();
-    dagen = eachDayOfInterval({ start: startOfMonth(this.date), end: endOfMonth(this.date) });
-    afspraken: Afspraak[] = [];
-    afsprakenPerDag = new Map<string, Afspraak[]>();
-    afsprakenSub: Subscription;
-    filter = '';
-    filteredAfspraken: Afspraak[] = [];
-    loading = false;
-    selectedAfspraak: Afspraak | undefined | null;
-    selectedAfspraakDetails: string | undefined | null;
-
+export class CalendarComponent {
     private afspraakService = inject(AfsprakenService);
-    private changeDetector = inject(ChangeDetectorRef);
 
-    ngOnInit() {
-        this.updateDate(this.date);
-    }
+    loading = false;
+    view$ = new BehaviorSubject<CalendarView>('maand');
+    date$ = new BehaviorSubject<Date>(new Date());
+    selectedAfspraak$ = new BehaviorSubject<Afspraak | null | undefined>(null);
+    filterFormControl = new FormControl('');
 
-    updateView(view: CalendarView) {
-        this.view = view;
-        switch (view) {
-            case 'maand': {
-                this.dagen = eachDayOfInterval({
-                    start: startOfWeek(startOfMonth(this.date), { weekStartsOn: 1 }),
-                    end: endOfWeek(endOfMonth(this.date), { weekStartsOn: 1 })
-                });
-                return;
-            }
-            case 'week': {
-                this.dagen = eachDayOfInterval({
-                    start: startOfWeek(this.date, { weekStartsOn: 1 }),
-                    end: endOfWeek(this.date, { weekStartsOn: 1 })
-                });
-                return;
-            }
-            case 'dag': {
-                this.dagen = [this.date];
-            }
-        }
-    }
+    private dagen$ = combineLatest([this.view$, this.date$]).pipe(
+        map(([view, date]) =>
+            match(view)
+                .with('maand', () => afsprakenVanDeMaand(date))
+                .with('week', () => afsprakenVanDeWeek(date))
+                .with('dag', () => [date])
+                .exhaustive()
+        ),
+        shareReplay({ bufferSize: 1, refCount: true })
+    );
 
-    updateDate(date: Date) {
-        this.afsprakenPerDag.clear();
-        this.date = date;
-        this.updateView(this.view);
-        this.afsprakenSub?.unsubscribe();
-        this.loading = true;
-        this.afsprakenSub = this.afspraakService
-            .afprakenVanDeMaand(this.date.getMonth(), this.date.getFullYear())
-            .subscribe((afspraken) => {
-                this.loading = false;
-                this.afspraken = afspraken;
-                this.filterAfspraken(this.filter);
-                if (isSameMonth(this.date, new Date())) {
-                    this.selectAfspraak(this.getEerstVolgendeAfspraak(), 5000);
-                }
-                this.changeDetector.markForCheck();
-            });
-    }
+    private afspraken$ = this.date$.pipe(
+        tap(() => (this.loading = true)),
+        switchMap((date) => this.afspraakService.afprakenVanDeMaand(date.getMonth(), date.getFullYear())),
+        tap(() => (this.loading = false)),
+        shareReplay({ bufferSize: 1, refCount: true })
+    );
 
-    filterAfspraken(filter: string) {
-        this.filteredAfspraken = this.afspraken.filter((afspraak) => afspraak.titel.includes(filter));
-        this.afsprakenPerDag = new Map(
-            this.dagen.map((dag) => [dag.toString(), this.filteredAfspraken.filter((afspraak) => isSameDay(afspraak.datum, dag))])
-        );
-    }
+    eerstVolgendeAfspraak$ = this.afspraken$
+        .pipe(
+            filter(() => isSameMonth(this.date$.value, new Date())),
+            map(eerstVolgendeAfspraak),
+            takeUntilDestroyed()
+        )
+        .subscribe(this.selectedAfspraak$);
 
-    selectAfspraak(afspraak: Afspraak | null | undefined, delayTime = 50) {
-        if (!afspraak) return;
-        this.selectedAfspraak = afspraak;
-        this.afspraakService.getDetails(afspraak.id, delayTime).subscribe((details) => {
-            this.selectedAfspraakDetails = details;
-            this.changeDetector.markForCheck();
-        });
-    }
+    afspraakDetails$ = this.selectedAfspraak$.pipe(
+        filter(isPresent),
+        switchMap((afspraak) => this.afspraakService.getDetails(afspraak.id)),
+        startWith(null)
+    );
 
-    clearFilter() {
-        this.filter = '';
-        this.filterAfspraken(this.filter);
-    }
+    private filteredAfspraken$ = combineLatest([this.afspraken$, this.filterFormControl.valueChanges.pipe(startWith(''))]).pipe(
+        map(([afspraken, filter]) => afspraken.filter((afspraak) => afspraak.titel.includes(filter ?? '')))
+    );
 
-    vorige = () => this.updateDate(navigationFns[this.view](this.date, -1));
-    volgende = () => this.updateDate(navigationFns[this.view](this.date, 1));
+    private afsprakenPerDag$ = combineLatest([this.filteredAfspraken$, this.dagen$]).pipe(
+        map(
+            ([afspraken, dagen]) =>
+                new Map(dagen.map((dag) => [dag.toString(), afspraken.filter((afspraak) => isSameDay(afspraak.datum, dag))]))
+        ),
+        startWith(new Map())
+    );
 
-    private getEerstVolgendeAfspraak = (): Afspraak | null | undefined =>
-        sortBy(
-            this.afspraken.filter((afspraak) => isFuture(afspraak.datum)),
-            ['datum'],
-            ['desc']
-        )[0];
+    viewmodel$ = combineLatest([
+        this.view$,
+        this.date$,
+        this.dagen$,
+        this.afsprakenPerDag$,
+        this.selectedAfspraak$,
+        this.afspraakDetails$
+    ]).pipe(
+        map(([view, date, dagen, afsprakenPerDag, selectedAfspraak, afspraakDetails]) => ({
+            view,
+            date,
+            dagen,
+            afsprakenPerDag,
+            selectedAfspraak,
+            afspraakDetails
+        }))
+    );
+
+    vorige = () => this.date$.next(navigationFns[this.view$.value](this.date$.value, -1));
+    volgende = () => this.date$.next(navigationFns[this.view$.value](this.date$.value, 1));
 }
-
-const navigationFns = {
-    dag: addDays,
-    week: addWeeks,
-    maand: addMonths
-} satisfies Record<CalendarView, (date: Date, number: number) => Date>;
