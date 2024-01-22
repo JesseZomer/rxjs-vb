@@ -3,12 +3,13 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } 
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { isSameDay, isSameMonth } from 'date-fns';
+import { computedAsync } from 'ngxtension/computed-async';
 import { computedFrom } from 'ngxtension/computed-from';
-import { filter, map, pipe, switchMap, tap } from 'rxjs';
+import { pipe, switchMap, tap } from 'rxjs';
 import { match } from 'ts-pattern';
 import { Afspraak, AfsprakenService } from '../afspraken.service';
 import { LoaderComponent } from '../loader/loader.component';
-import { CalendarView, afsprakenVanDeMaand, afsprakenVanDeWeek, eerstVolgendeAfspraak, isPresent, navigationFns } from './../utils';
+import { CalendarView, afsprakenVanDeMaand, afsprakenVanDeWeek, eerstVolgendeAfspraak, navigationFns } from './../utils';
 import { CalendarDayComponent } from './calendar-day/calendar-day.component';
 
 @Component({
@@ -47,22 +48,8 @@ export class CalendarComponent {
         { initialValue: new Array<Afspraak>() }
     );
 
-    private eerstVolgendeAfspraak = computed(() => {
-        if (!isSameMonth(this.date(), new Date())) {
-            return null;
-        }
-        return eerstVolgendeAfspraak(this.afspraken());
-    });
-
-    afspraakDetails = computedFrom(
-        [this.selectedAfspraak],
-        pipe(
-            map(([afspraak]) => afspraak),
-            filter(isPresent),
-            switchMap((afspraak) => this.afspraakService.getDetails(afspraak.id))
-        ),
-        { initialValue: null }
-    );
+    private eerstVolgendeAfspraak = computed(() => (isSameMonth(this.date(), new Date()) ? eerstVolgendeAfspraak(this.afspraken()) : null));
+    afspraakDetails = computedAsync(() => (this.selectedAfspraak() ? this.afspraakService.getDetails(this.selectedAfspraak()!.id) : null));
 
     private filteredAfspraken = computed(() => this.afspraken().filter((afspraak) => afspraak.titel.includes(this.filterValue() ?? '')));
     afsprakenPerDag = computed(
