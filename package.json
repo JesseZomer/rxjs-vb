@@ -22,7 +22,7 @@
     "date-fns": "^3.2.0",
     "lodash": "^4.17.21",
     "lodash-es": "^4.17.21",
-    "ngxtension": "^1.9.9",
+    "ngxtension": "^1.10.2",
     "rxjs": "~7.8.0",
     "stylelint": "^16.1.0",
     "ts-pattern": "^5.0.6",
