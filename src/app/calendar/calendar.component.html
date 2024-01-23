@@ -1,4 +1,4 @@
-<h1>Calendar</h1>
+<h1 [routerLink]="[]">Calendar</h1>
 <header>
     <span class="maand-jaar">{{ this.date | date: 'MMMM yyyy' }}</span>
     <div class="filter">
@@ -36,8 +36,7 @@
             [dag]="dag"
             [afspraken]="afsprakenPerDag.get(dag.toString()) ?? []"
             [peildatum]="date"
-            [selectedAfspraakId]="selectedAfspraak?.id"
-            (selectAfspraak)="selectAfspraak($event)" />
+            [selectedAfspraakId]="selectedAfspraak?.id" />
     }
 </div>
 <div class="details">Geselecteerd afspraak details: {{ selectedAfspraakDetails }}</div>

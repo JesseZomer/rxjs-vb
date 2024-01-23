@@ -1,6 +1,8 @@
 import { DatePipe, NgIf } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { eachDayOfInterval, endOfMonth, isFuture, isSameDay, isSameMonth, startOfMonth } from 'date-fns';
 import { sortBy } from 'lodash';
 import { Subscription } from 'rxjs';
@@ -12,7 +14,7 @@ import { CalendarDayComponent } from './calendar-day/calendar-day.component';
 @Component({
     selector: 'app-calendar',
     standalone: true,
-    imports: [CalendarDayComponent, ReactiveFormsModule, FormsModule, NgIf, LoaderComponent, DatePipe],
+    imports: [CalendarDayComponent, ReactiveFormsModule, FormsModule, NgIf, LoaderComponent, DatePipe, RouterLink],
     templateUrl: './calendar.component.html',
     styleUrl: './calendar.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush
@@ -32,6 +34,16 @@ export class CalendarComponent implements OnInit {
 
     private afspraakService = inject(AfsprakenService);
     private changeDetector = inject(ChangeDetectorRef);
+    private activeRoute = inject(ActivatedRoute);
+
+    constructor() {
+        this.activeRoute.queryParams.pipe(takeUntilDestroyed()).subscribe((params) => {
+            const selectedAfspraakId = params['afspraak'];
+            if (selectedAfspraakId && this.afspraken) {
+                this.selectAfspraak(selectedAfspraakId);
+            }
+        });
+    }
 
     ngOnInit() {
         this.updateDate(this.date);
@@ -55,11 +67,10 @@ export class CalendarComponent implements OnInit {
     }
 
     updateDate(date: Date) {
-        this.afsprakenPerDag.clear();
         this.date = date;
         this.updateView(this.view);
-        this.afsprakenSub?.unsubscribe();
         this.loading = true;
+        this.afsprakenSub?.unsubscribe();
         this.afsprakenSub = this.afspraakService
             .afprakenVanDeMaand(this.date.getMonth(), this.date.getFullYear())
             .subscribe((afspraken) => {
@@ -67,7 +78,10 @@ export class CalendarComponent implements OnInit {
                 this.afspraken = afspraken;
                 this.filterAfspraken(this.filter);
                 if (isSameMonth(this.date, new Date())) {
-                    this.selectAfspraak(this.getEerstVolgendeAfspraak(), 5000);
+                    const volgendeAfspraak = this.getEerstVolgendeAfspraak();
+                    if (volgendeAfspraak) {
+                        this.selectAfspraak(volgendeAfspraak.id, 5000);
+                    }
                 }
                 this.changeDetector.markForCheck();
             });
@@ -80,10 +94,9 @@ export class CalendarComponent implements OnInit {
         );
     }
 
-    selectAfspraak(afspraak: Afspraak | null | undefined, delayTime = 50) {
-        if (!afspraak) return;
-        this.selectedAfspraak = afspraak;
-        this.afspraakService.getDetails(afspraak.id, delayTime).subscribe((details) => {
+    selectAfspraak(afspraakId: string, delayTime = 50) {
+        this.selectedAfspraak = this.afspraken.find((afspraak) => afspraak.id === afspraakId);
+        this.afspraakService.getDetails(afspraakId, delayTime).subscribe((details) => {
             this.selectedAfspraakDetails = details;
             this.changeDetector.markForCheck();
         });

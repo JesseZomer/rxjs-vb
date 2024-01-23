@@ -3,7 +3,11 @@
 </header>
 <div class="afspraken">
     @for (afspraak of afspraken; track $index) {
-        <div class="afspraak" [class.is-selected]="afspraak.id === selectedAfspraakId" (click)="selectAfspraak.emit(afspraak)">
+        <div
+            class="afspraak"
+            [class.is-selected]="afspraak.id === selectedAfspraakId"
+            [routerLink]="[]"
+            [queryParams]="{ afspraak: afspraak.id }">
             <div class="tijd">{{ afspraak.datum | date: 'HH:mm' }}</div>
             <div class="titel">{{ afspraak.titel }}</div>
         </div>
