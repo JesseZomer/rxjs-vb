@@ -1,11 +1,11 @@
 import { AsyncPipe, DatePipe, NgIf } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { isSameDay, isSameMonth } from 'date-fns';
-import { BehaviorSubject, combineLatest, filter, map, shareReplay, startWith, switchMap, tap } from 'rxjs';
+import { BehaviorSubject, combineLatest, filter, map, merge, shareReplay, startWith, switchMap, tap } from 'rxjs';
 import { match } from 'ts-pattern';
-import { Afspraak, AfsprakenService } from '../afspraken.service';
+import { AfsprakenService } from '../afspraken.service';
 import { LoaderComponent } from '../loader/loader.component';
 import { CalendarView, afsprakenVanDeMaand, afsprakenVanDeWeek, eerstVolgendeAfspraak, isPresent, navigationFns } from './../utils';
 import { CalendarDayComponent } from './calendar-day/calendar-day.component';
@@ -13,18 +13,18 @@ import { CalendarDayComponent } from './calendar-day/calendar-day.component';
 @Component({
     selector: 'app-calendar',
     standalone: true,
-    imports: [CalendarDayComponent, ReactiveFormsModule, FormsModule, NgIf, LoaderComponent, DatePipe, AsyncPipe],
+    imports: [CalendarDayComponent, ReactiveFormsModule, FormsModule, NgIf, LoaderComponent, DatePipe, AsyncPipe, RouterLink],
     templateUrl: './calendar.component.html',
     styleUrl: './calendar.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CalendarComponent {
     private afspraakService = inject(AfsprakenService);
+    private activatedRoute = inject(ActivatedRoute);
 
     loading = false;
     view$ = new BehaviorSubject<CalendarView>('maand');
     date$ = new BehaviorSubject<Date>(new Date());
-    selectedAfspraak$ = new BehaviorSubject<Afspraak | null | undefined>(null);
     filterFormControl = new FormControl('');
 
     private dagen$ = combineLatest([this.view$, this.date$]).pipe(
@@ -45,17 +45,20 @@ export class CalendarComponent {
         shareReplay({ bufferSize: 1, refCount: true })
     );
 
-    eerstVolgendeAfspraak$ = this.afspraken$
-        .pipe(
-            filter(() => isSameMonth(this.date$.value, new Date())),
-            map(eerstVolgendeAfspraak),
-            takeUntilDestroyed()
-        )
-        .subscribe(this.selectedAfspraak$);
+    private eerstVolgendeAfspraakId$ = this.afspraken$.pipe(
+        filter(() => isSameMonth(this.date$.value, new Date())),
+        map(eerstVolgendeAfspraak),
+        map((afspraak) => afspraak?.id)
+    );
 
-    afspraakDetails$ = this.selectedAfspraak$.pipe(
+    private selectedAfspraakId$ = merge(
+        this.eerstVolgendeAfspraakId$,
+        this.activatedRoute.queryParams.pipe(map((qparams): string | undefined => qparams['afspraak']))
+    );
+
+    private afspraakDetails$ = this.selectedAfspraakId$.pipe(
         filter(isPresent),
-        switchMap((afspraak) => this.afspraakService.getDetails(afspraak.id)),
+        switchMap((afspraakId) => this.afspraakService.getDetails(afspraakId)),
         startWith(null)
     );
 
@@ -76,15 +79,15 @@ export class CalendarComponent {
         this.date$,
         this.dagen$,
         this.afsprakenPerDag$,
-        this.selectedAfspraak$,
+        this.selectedAfspraakId$,
         this.afspraakDetails$
     ]).pipe(
-        map(([view, date, dagen, afsprakenPerDag, selectedAfspraak, afspraakDetails]) => ({
+        map(([view, date, dagen, afsprakenPerDag, selectedAfspraakId, afspraakDetails]) => ({
             view,
             date,
             dagen,
             afsprakenPerDag,
-            selectedAfspraak,
+            selectedAfspraakId,
             afspraakDetails
         }))
     );

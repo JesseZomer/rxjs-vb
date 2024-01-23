@@ -1,4 +1,4 @@
-<h1>Calendar</h1>
+<h1 [routerLink]="[]">Calendar</h1>
 <ng-container *ngIf="viewmodel$ | async as vm">
     <header>
         <span class="maand-jaar">{{ vm.date | date: 'MMMM yyyy' }}</span>
@@ -37,8 +37,7 @@
                 [dag]="dag"
                 [afspraken]="vm.afsprakenPerDag.get(dag.toString()) ?? []"
                 [peildatum]="vm.date"
-                [selectedAfspraakId]="vm.selectedAfspraak?.id"
-                (selectAfspraak)="this.selectedAfspraak$.next($event)" />
+                [selectedAfspraakId]="vm.selectedAfspraakId" />
         }
     </div>
     <div class="details">Geselecteerd afspraak details: {{ vm.afspraakDetails }}</div>
