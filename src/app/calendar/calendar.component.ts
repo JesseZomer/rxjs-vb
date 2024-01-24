@@ -1,11 +1,12 @@
 import { AsyncPipe, DatePipe, NgIf } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { isSameDay, isSameMonth } from 'date-fns';
 import { computedAsync } from 'ngxtension/computed-async';
 import { computedFrom } from 'ngxtension/computed-from';
-import { pipe, switchMap, tap } from 'rxjs';
+import { injectQueryParams } from 'ngxtension/inject-query-params';
+import { merge, pipe, switchMap, tap } from 'rxjs';
 import { match } from 'ts-pattern';
 import { Afspraak, AfsprakenService } from '../afspraken.service';
 import { LoaderComponent } from '../loader/loader.component';
@@ -23,10 +24,10 @@ import { CalendarDayComponent } from './calendar-day/calendar-day.component';
 export class CalendarComponent {
     private afspraakService = inject(AfsprakenService);
 
+    afspraakId = injectQueryParams('afspraak');
     loading = signal(false);
     view = signal<CalendarView>('maand');
     date = signal<Date>(new Date());
-    selectedAfspraak = signal<Afspraak | null | undefined>(null);
     filterFormControl = new FormControl('');
     filterValue = toSignal(this.filterFormControl.valueChanges);
 
@@ -48,8 +49,14 @@ export class CalendarComponent {
         { initialValue: new Array<Afspraak>() }
     );
 
-    private eerstVolgendeAfspraak = computed(() => (isSameMonth(this.date(), new Date()) ? eerstVolgendeAfspraak(this.afspraken()) : null));
-    afspraakDetails = computedAsync(() => (this.selectedAfspraak() ? this.afspraakService.getDetails(this.selectedAfspraak()!.id) : null));
+    private eerstVolgendeAfspraak = computed(() =>
+        isSameMonth(this.date(), new Date()) ? eerstVolgendeAfspraak(this.afspraken())?.id : null
+    );
+    private eerstVolgendeAfspraakOfAfspraakId = toSignal(merge(toObservable(this.afspraakId), toObservable(this.eerstVolgendeAfspraak)));
+
+    afspraakDetails = computedAsync(() =>
+        this.eerstVolgendeAfspraakOfAfspraakId() ? this.afspraakService.getDetails(this.eerstVolgendeAfspraakOfAfspraakId()!) : null
+    );
 
     private filteredAfspraken = computed(() => this.afspraken().filter((afspraak) => afspraak.titel.includes(this.filterValue() ?? '')));
     afsprakenPerDag = computed(
@@ -62,14 +69,5 @@ export class CalendarComponent {
     vorige = () => this.date.set(navigationFns[this.view()](this.date(), -1));
     volgende = () => this.date.set(navigationFns[this.view()](this.date(), 1));
 
-    constructor() {
-        effect(
-            () => {
-                if (this.eerstVolgendeAfspraak()) {
-                    this.selectedAfspraak.set(this.eerstVolgendeAfspraak());
-                }
-            },
-            { allowSignalWrites: true }
-        );
-    }
+    constructor() {}
 }

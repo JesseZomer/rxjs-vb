@@ -1,12 +1,13 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, EventEmitter, Output, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { isSameDay } from 'date-fns';
 import { Afspraak } from '../../afspraken.service';
 
 @Component({
     selector: 'app-calendar-day',
     standalone: true,
-    imports: [DatePipe],
+    imports: [DatePipe, RouterLink],
     templateUrl: './calendar-day.component.html',
     styleUrl: './calendar-day.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush
@@ -20,6 +21,4 @@ export class CalendarDayComponent {
     dagnummer = computed(() => this.dag().getDate());
     isToday = computed(() => isSameDay(this.dag(), new Date()));
     isPeildatum = computed(() => isSameDay(this.dag(), this.peildatum()));
-
-    @Output() selectAfspraak = new EventEmitter<Afspraak>();
 }

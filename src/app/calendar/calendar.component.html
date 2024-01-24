@@ -36,8 +36,7 @@
             [dag]="dag"
             [afspraken]="afsprakenPerDag().get(dag.toString()) ?? []"
             [peildatum]="date()"
-            [selectedAfspraakId]="selectedAfspraak()?.id"
-            (selectAfspraak)="selectedAfspraak.set($event)" />
+            [selectedAfspraakId]="afspraakId()" />
     }
 </div>
 <div class="details">Geselecteerd afspraak details: {{ afspraakDetails() }}</div>
