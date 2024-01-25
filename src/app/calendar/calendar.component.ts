@@ -3,14 +3,13 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { isSameDay, isSameMonth } from 'date-fns';
-import { computedAsync } from 'ngxtension/computed-async';
 import { computedFrom } from 'ngxtension/computed-from';
 import { injectQueryParams } from 'ngxtension/inject-query-params';
-import { merge, pipe, switchMap, tap } from 'rxjs';
+import { filter, merge, pipe, switchMap, tap } from 'rxjs';
 import { match } from 'ts-pattern';
 import { Afspraak, AfsprakenService } from '../afspraken.service';
 import { LoaderComponent } from '../loader/loader.component';
-import { CalendarView, afsprakenVanDeMaand, afsprakenVanDeWeek, eerstVolgendeAfspraak, navigationFns } from './../utils';
+import { CalendarView, afsprakenVanDeMaand, afsprakenVanDeWeek, eerstVolgendeAfspraak, isPresent, navigationFns } from './../utils';
 import { CalendarDayComponent } from './calendar-day/calendar-day.component';
 
 @Component({
@@ -52,10 +51,12 @@ export class CalendarComponent {
     private eerstVolgendeAfspraak = computed(() =>
         isSameMonth(this.date(), new Date()) ? eerstVolgendeAfspraak(this.afspraken())?.id : null
     );
-    private eerstVolgendeAfspraakOfAfspraakId = toSignal(merge(toObservable(this.afspraakId), toObservable(this.eerstVolgendeAfspraak)));
 
-    afspraakDetails = computedAsync(() =>
-        this.eerstVolgendeAfspraakOfAfspraakId() ? this.afspraakService.getDetails(this.eerstVolgendeAfspraakOfAfspraakId()!) : null
+    afspraakDetails = toSignal(
+        merge(toObservable(this.afspraakId), toObservable(this.eerstVolgendeAfspraak)).pipe(
+            filter(isPresent),
+            switchMap((id) => this.afspraakService.getDetails(id))
+        )
     );
 
     private filteredAfspraken = computed(() => this.afspraken().filter((afspraak) => afspraak.titel.includes(this.filterValue() ?? '')));
@@ -68,6 +69,4 @@ export class CalendarComponent {
 
     vorige = () => this.date.set(navigationFns[this.view()](this.date(), -1));
     volgende = () => this.date.set(navigationFns[this.view()](this.date(), 1));
-
-    constructor() {}
 }
