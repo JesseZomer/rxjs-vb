@@ -34,8 +34,8 @@
     <div class="dagen" [class.is-dag]="vm.view === 'dag'">
         @for (dag of vm.dagen; track $index) {
             <app-calendar-day
-                [dag]="dag"
-                [afspraken]="vm.afsprakenPerDag.get(dag.toString()) ?? []"
+                [dag]="dag.dag"
+                [afspraken]="dag.afspraken"
                 [peildatum]="vm.date"
                 [selectedAfspraakId]="vm.selectedAfspraakId" />
         }

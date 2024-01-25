@@ -23,10 +23,18 @@ export class CalendarComponent {
     private activatedRoute = inject(ActivatedRoute);
 
     loading = false;
-    view$ = new BehaviorSubject<CalendarView>('maand');
-    date$ = new BehaviorSubject<Date>(new Date());
     filterFormControl = new FormControl('');
 
+    /**
+     *  Source streams
+     **/
+    view$ = new BehaviorSubject<CalendarView>('maand');
+    date$ = new BehaviorSubject<Date>(new Date());
+    filter$ = this.filterFormControl.valueChanges.pipe(startWith(''));
+
+    /**
+     *  intermediate streams
+     **/
     private dagen$ = combineLatest([this.view$, this.date$]).pipe(
         map(([view, date]) =>
             match(view)
@@ -45,6 +53,10 @@ export class CalendarComponent {
         shareReplay({ bufferSize: 1, refCount: true })
     );
 
+    private filteredAfspraken$ = combineLatest([this.afspraken$, this.filter$]).pipe(
+        map(([afspraken, filter]) => afspraken.filter((afspraak) => afspraak.titel.includes(filter ?? '')))
+    );
+
     private eerstVolgendeAfspraakId$ = this.afspraken$.pipe(
         filter(() => isSameMonth(this.date$.value, new Date())),
         map(eerstVolgendeAfspraak),
@@ -56,41 +68,28 @@ export class CalendarComponent {
         this.activatedRoute.queryParams.pipe(map((qparams): string | undefined => qparams['afspraak']))
     );
 
-    private afspraakDetails$ = this.selectedAfspraakId$.pipe(
+    /**
+     *  template streams
+     **/
+    dagenMetAfspraken$ = combineLatest([this.filteredAfspraken$, this.dagen$]).pipe(
+        map(([afspraken, dagen]) =>
+            dagen.map((dag) => ({ dag, afspraken: afspraken.filter((afspraak) => isSameDay(afspraak.datum, dag)) }))
+        )
+    );
+
+    afspraakDetails$ = this.selectedAfspraakId$.pipe(
         filter(isPresent),
         switchMap((afspraakId) => this.afspraakService.getDetails(afspraakId)),
         startWith(null)
     );
 
-    private filteredAfspraken$ = combineLatest([this.afspraken$, this.filterFormControl.valueChanges.pipe(startWith(''))]).pipe(
-        map(([afspraken, filter]) => afspraken.filter((afspraak) => afspraak.titel.includes(filter ?? '')))
+    viewmodel$ = combineLatest([this.view$, this.date$, this.dagenMetAfspraken$, this.afspraakDetails$, this.selectedAfspraakId$]).pipe(
+        map(([view, date, dagen, afspraakDetails, selectedAfspraakId]) => ({ view, date, dagen, afspraakDetails, selectedAfspraakId }))
     );
 
-    private afsprakenPerDag$ = combineLatest([this.filteredAfspraken$, this.dagen$]).pipe(
-        map(
-            ([afspraken, dagen]) =>
-                new Map(dagen.map((dag) => [dag.toString(), afspraken.filter((afspraak) => isSameDay(afspraak.datum, dag))]))
-        ),
-        startWith(new Map())
-    );
-
-    viewmodel$ = combineLatest([
-        this.view$,
-        this.date$,
-        this.dagen$,
-        this.afsprakenPerDag$,
-        this.selectedAfspraakId$,
-        this.afspraakDetails$
-    ]).pipe(
-        map(([view, date, dagen, afsprakenPerDag, selectedAfspraakId, afspraakDetails]) => ({
-            view,
-            date,
-            dagen,
-            afsprakenPerDag,
-            selectedAfspraakId,
-            afspraakDetails
-        }))
-    );
+    /**
+     *  functions
+     **/
 
     vorige = () => this.date$.next(navigationFns[this.view$.value](this.date$.value, -1));
     volgende = () => this.date$.next(navigationFns[this.view$.value](this.date$.value, 1));
