@@ -1,5 +1,5 @@
 import { DatePipe, NgIf } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -19,7 +19,7 @@ import { CalendarDayComponent } from './calendar-day/calendar-day.component';
     styleUrl: './calendar.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class CalendarComponent implements OnInit {
+export class CalendarComponent {
     view: CalendarView = 'maand';
     date = new Date();
     dagen = eachDayOfInterval({ start: startOfMonth(this.date), end: endOfMonth(this.date) });
@@ -27,7 +27,6 @@ export class CalendarComponent implements OnInit {
     afsprakenPerDag = new Map<string, Afspraak[]>();
     afsprakenSub: Subscription;
     filter = '';
-    filteredAfspraken: Afspraak[] = [];
     loading = false;
     selectedAfspraak: Afspraak | undefined | null;
     selectedAfspraakDetails: string | undefined | null;
@@ -88,9 +87,9 @@ export class CalendarComponent implements OnInit {
     }
 
     filterAfspraken(filter: string) {
-        this.filteredAfspraken = this.afspraken.filter((afspraak) => afspraak.titel.includes(filter));
+        const filteredAfspraken = this.afspraken.filter((afspraak) => afspraak.titel.includes(filter));
         this.afsprakenPerDag = new Map(
-            this.dagen.map((dag) => [dag.toString(), this.filteredAfspraken.filter((afspraak) => isSameDay(afspraak.datum, dag))])
+            this.dagen.map((dag) => [dag.toString(), filteredAfspraken.filter((afspraak) => isSameDay(afspraak.datum, dag))])
         );
     }
 
