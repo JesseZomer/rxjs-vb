@@ -7,7 +7,14 @@ import { BehaviorSubject, combineLatest, filter, map, merge, shareReplay, startW
 import { match } from 'ts-pattern';
 import { AfsprakenService } from '../afspraken.service';
 import { LoaderComponent } from '../loader/loader.component';
-import { CalendarView, afsprakenVanDeMaand, afsprakenVanDeWeek, eerstVolgendeAfspraak, isPresent, navigationFns } from './../utils';
+import {
+    CalendarView,
+    afsprakenVanDeMaand as dagenVanDeMaand,
+    afsprakenVanDeWeek as dagenVanDeWeek,
+    eerstVolgendeAfspraak,
+    isPresent,
+    navigationFns
+} from './../utils';
 import { CalendarDayComponent } from './calendar-day/calendar-day.component';
 
 @Component({
@@ -38,8 +45,8 @@ export class CalendarComponent {
     private dagen$ = combineLatest([this.view$, this.date$]).pipe(
         map(([view, date]) =>
             match(view)
-                .with('maand', () => afsprakenVanDeMaand(date))
-                .with('week', () => afsprakenVanDeWeek(date))
+                .with('maand', () => dagenVanDeMaand(date))
+                .with('week', () => dagenVanDeWeek(date))
                 .with('dag', () => [date])
                 .exhaustive()
         ),
