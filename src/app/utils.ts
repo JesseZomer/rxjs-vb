@@ -2,13 +2,13 @@ import { addDays, addMonths, addWeeks, eachDayOfInterval, endOfMonth, endOfWeek,
 import { sortBy } from 'lodash';
 import { Afspraak } from './afspraken.service';
 
-export const afsprakenVanDeMaand = (date: Date) =>
+export const dagenVanDeMaand = (date: Date) =>
     eachDayOfInterval({
         start: startOfWeek(startOfMonth(date), { weekStartsOn: 1 }),
         end: endOfWeek(endOfMonth(date), { weekStartsOn: 1 })
     });
 
-export const afsprakenVanDeWeek = (date: Date) =>
+export const dagenVanDeWeek = (date: Date) =>
     eachDayOfInterval({
         start: startOfWeek(date, { weekStartsOn: 1 }),
         end: endOfWeek(date, { weekStartsOn: 1 })

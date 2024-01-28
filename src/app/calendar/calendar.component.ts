@@ -7,14 +7,7 @@ import { BehaviorSubject, combineLatest, filter, map, merge, shareReplay, startW
 import { match } from 'ts-pattern';
 import { AfsprakenService } from '../afspraken.service';
 import { LoaderComponent } from '../loader/loader.component';
-import {
-    CalendarView,
-    afsprakenVanDeMaand as dagenVanDeMaand,
-    afsprakenVanDeWeek as dagenVanDeWeek,
-    eerstVolgendeAfspraak,
-    isPresent,
-    navigationFns
-} from './../utils';
+import { CalendarView, dagenVanDeMaand, dagenVanDeWeek, eerstVolgendeAfspraak, isPresent, navigationFns } from './../utils';
 import { CalendarDayComponent } from './calendar-day/calendar-day.component';
 
 @Component({
