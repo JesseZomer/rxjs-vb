@@ -60,11 +60,12 @@ export class CalendarComponent {
     );
 
     private filteredAfspraken = computed(() => this.afspraken().filter((afspraak) => afspraak.titel.includes(this.filterValue() ?? '')));
-    afsprakenPerDag = computed(
-        () =>
-            new Map(
-                this.dagen().map((dag) => [dag.toString(), this.filteredAfspraken().filter((afspraak) => isSameDay(afspraak.datum, dag))])
-            )
+
+    dagenMetAfspraken = computed(() =>
+        this.dagen().map((datum) => ({
+            datum,
+            afspraken: this.filteredAfspraken().filter((afspraak) => isSameDay(afspraak.datum, datum))
+        }))
     );
 
     vorige = () => this.date.set(navigationFns[this.view()](this.date(), -1));

@@ -31,12 +31,8 @@
     }
 </div>
 <div class="dagen" [class.is-dag]="view() === 'dag'">
-    @for (dag of dagen(); track $index) {
-        <app-calendar-day
-            [dag]="dag"
-            [afspraken]="afsprakenPerDag().get(dag.toString()) ?? []"
-            [peildatum]="date()"
-            [selectedAfspraakId]="afspraakId()" />
+    @for (dag of dagenMetAfspraken(); track $index) {
+        <app-calendar-day [dag]="dag.datum" [afspraken]="dag.afspraken" [peildatum]="date()" [selectedAfspraakId]="afspraakId()" />
     }
 </div>
 <div class="details">Geselecteerd afspraak details: {{ afspraakDetails() }}</div>
