@@ -1,13 +1,13 @@
 import { AsyncPipe, DatePipe, NgIf } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, untracked } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { isSameDay, isSameMonth } from 'date-fns';
-import { computedFrom } from 'ngxtension/computed-from';
+import { computedAsync } from 'ngxtension/computed-async';
 import { injectQueryParams } from 'ngxtension/inject-query-params';
-import { filter, merge, pipe, switchMap, tap } from 'rxjs';
+import { filter, merge, switchMap, tap } from 'rxjs';
 import { match } from 'ts-pattern';
-import { Afspraak, AfsprakenService } from '../afspraken.service';
+import { AfsprakenService } from '../afspraken.service';
 import { LoaderComponent } from '../loader/loader.component';
 import { CalendarView, afsprakenVanDeMaand, afsprakenVanDeWeek, eerstVolgendeAfspraak, isPresent, navigationFns } from './../utils';
 import { CalendarDayComponent } from './calendar-day/calendar-day.component';
@@ -38,14 +38,14 @@ export class CalendarComponent {
             .exhaustive()
     );
 
-    private afspraken = computedFrom(
-        [this.date],
-        pipe(
-            tap(() => this.loading.set(true)),
-            switchMap(([date]) => this.afspraakService.afprakenVanDeMaand(date.getMonth(), date.getFullYear())),
-            tap(() => this.loading.set(false))
-        ),
-        { initialValue: new Array<Afspraak>() }
+    private afspraken = computedAsync(
+        () => {
+            untracked(() => this.loading.set(true));
+            return this.afspraakService
+                .afprakenVanDeMaand(this.date().getMonth(), this.date().getFullYear())
+                .pipe(tap(() => this.loading.set(false)));
+        },
+        { initialValue: [] }
     );
 
     private eerstVolgendeAfspraak = computed(() =>
