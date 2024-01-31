@@ -31,6 +31,7 @@ export class CalendarComponent {
     view$ = new BehaviorSubject<CalendarView>('maand');
     date$ = new BehaviorSubject<Date>(new Date());
     filter$ = this.filterFormControl.valueChanges.pipe(startWith(''));
+    afspraakQueryParam$ = this.activatedRoute.queryParams.pipe(map((qparams): string | undefined => qparams['afspraak']));
 
     /**
      *  intermediate streams
@@ -63,21 +64,18 @@ export class CalendarComponent {
         map((afspraak) => afspraak?.id)
     );
 
-    private selectedAfspraakId$ = merge(
-        this.eerstVolgendeAfspraakId$,
-        this.activatedRoute.queryParams.pipe(map((qparams): string | undefined => qparams['afspraak']))
-    );
-
     /**
      *  template streams
      **/
-    dagenMetAfspraken$ = combineLatest([this.filteredAfspraken$, this.dagen$]).pipe(
+    private dagenMetAfspraken$ = combineLatest([this.filteredAfspraken$, this.dagen$]).pipe(
         map(([afspraken, dagen]) =>
             dagen.map((dag) => ({ dag, afspraken: afspraken.filter((afspraak) => isSameDay(afspraak.datum, dag)) }))
         )
     );
 
-    afspraakDetails$ = this.selectedAfspraakId$.pipe(
+    private selectedAfspraakId$ = merge(this.eerstVolgendeAfspraakId$, this.afspraakQueryParam$);
+
+    private afspraakDetails$ = this.selectedAfspraakId$.pipe(
         filter(isPresent),
         switchMap((afspraakId) => this.afspraakService.getDetails(afspraakId)),
         startWith(null)
